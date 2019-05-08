@@ -84,15 +84,16 @@ namespace FormApp.Controllers
         }
 
         [HttpPost]
-        public int AddNewForm(FormModel formModel)
+        public JsonResult forms(FormModel formModel)
         {
             if (Session["userId"] != null)
             {
-                if(formModel != null)
+                var userId = (int)Session["userId"];
+                if (formModel != null)
                 {
                     db = new DataContext();
                     Fields field = new Fields()
-                    {                        
+                    {
                         Name = formModel.Fields.Name,
                         Surname = formModel.Fields.Surname,
                         Age = formModel.Fields.Age
@@ -105,17 +106,16 @@ namespace FormApp.Controllers
                         Name = formModel.Name,
                         Description = formModel.Description,
                         CreatedAt = DateTime.Now.Date,
-                        CreatedBy = formModel.CreatedBy,
+                        CreatedBy = userId,
                         FieldId = field.Id,
                     };
-
-                    
-
-                    return 1;
+                    db.Forms.Add(form);
+                    db.SaveChanges();
+                    return Json(1);
                 }
-                return -1;
+                return Json(-1);
             }
-            return 0;
+            return Json(0);
         }
     }
 }

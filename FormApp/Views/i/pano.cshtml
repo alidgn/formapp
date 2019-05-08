@@ -67,8 +67,47 @@
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                 <h3>Yeni Form Oluştur</h3>
             </div>
+            <div class="modal-body">
+                <div class="form-horizontal">
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Form Adı</label>
+                        <div class="col-md-10">
+                            <input class="form-control" name="name" id="newFormName" onkeypress="isEmpty(event)" type="text" placeholder="Form adı girin." required />
+                            <label id="newFormNameLabel" class="control-label text-danger"></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Form Açıklaması</label>
+                        <div class="col-md-10">
+                            <input class="form-control" name="surname" id="newFormDesc" onkeypress="isEmpty(event)" type="text" placeholder="Açıklama girin." required />
+                            <label id="newFormDescLabel" class="control-label text-danger"></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Ad</label>
+                        <div class="col-md-10">
+                            <input class="form-control" name="name" id="newName" onkeypress="isEmpty(event)" type="text" placeholder="Ad giriniz." required />
+                            <label id="newNameLabel" class="control-label text-danger"></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Soyad</label>
+                        <div class="col-md-10">
+                            <input class="form-control" name="surname" id="newSurname" onkeypress="isEmpty(event)" type="text" placeholder="Soyad giriniz." required />
+                            <label id="newSurnameLabel" class="control-label text-danger"></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Yaş</label>
+                        <div class="col-md-10">
+                            <input class="form-control" name="age" id="newAge" onkeypress="isEmpty(event)" type="number" placeholder="Yaş giriniz." />
+                            <label id="newAgeLabel" class="control-label text-danger"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary">Oluştur</button>
+                <button type="submit" onclick="postNewForm()" class="btn btn-primary">Oluştur</button>
             </div>
         </div>
     </div>
@@ -78,11 +117,11 @@
 <script>
 
     function getForms() {
+        $('#content').empty();
         $.ajax({
             dataType: "json",
             url: "/i/forms",
             success: function doldur(d) {
-                console.log(d);
                 if (d === "unauthorized") {
                     window.location.href = "/account/login";
                 } else if (d === "notfound") {
@@ -101,31 +140,11 @@
         });
     }
 
-    $("#search").on("keyup", function () {
-        var value = $(this).val();
-        $("table tr").each(function (index) {
-            if (index !== 0) {
-                $row = $(this);
-                console.log($row)
-                var id = $row.find("td:first").text().trim().toLocaleLowerCase();
-                console.log(id)
-                if (id.indexOf(value) !== 0) {
-                    $row.hide();
-                }
-                else {
-                    $row.show();
-                }
-            }
-        });
-    });
-
     function getFormById(id) {
-        console.log(id);
         $.ajax({
             dataType: "json",
             url: "/i/forms/" + id,
             success: function doldur(d) {
-                console.log(d);
                 $('#formTitle').text(d.Name);
                 $('#formDesc').text(d.Description);
                 $('#formDate').text(d.CreatedAt);
@@ -137,146 +156,71 @@
     }
 
     function postNewForm() {
-        $.ajax({
-            type:"post",
-            dataType: "json",
-            url: "/i/forms",
-            data: { },
-            success: function doldur(d) {
-                console.log(d);        
-            }
-        });
+        var count = 0;
+
+        if ($('#newFormName').val() === "") {
+            $('#newFormNameLabel').text("Bu alan boş geçilemez");
+            count++;
+        }
+        if ($('#newFormDesc').val() === "") {
+            $('#newFormDescLabel').text("Bu alan boş geçilemez");
+            count++;
+        }
+        if ($('#newName').val() === "") {
+            $('#newNameLabel').text("Bu alan boş geçilemez");
+            count++;
+        }
+        if ($('#newSurname').val() === "") {
+            $('#newSurnameLabel').text("Bu alan boş geçilemez");
+            count++;
+        }
+        if (!(/^\d*$/.test($('#newAge').val()))) {
+            $('#newAgeLabel').text("Lütfen geçerli bir yaş girin");
+            count++;
+        }
+
+        if (count === 0) {
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: "/i/forms",
+                data: {
+                    "Name": $('#newFormName').val(),
+                    "Description": $('#newFormDesc').val(),
+                    "Fields": {
+                        "Name": $('#newName').val(),
+                        "Surname": $('#newSurname').val(),
+                        "Age": $('#newAge').val()
+                    }
+                },
+                success: function doldur(d) {
+                    if (d === 1) {
+                        $('#labelModal').text("");
+                        $('#newForm').modal('hide');
+                        getForms();
+                    } else if (d === 0) {
+                        $('#labelModal').text("Form kaydedilemedi");
+                    } else if (d === -1) {
+                        window.location.href = "/account/login";
+                    }
+                }
+            });
+        }        
     }
+
+    function isEmpty(e) {
+        $('#' + e.target.id + 'Label').text("");
+    }   
+
+    $("#search").on("keyup", function () {
+        var value = $(this).val().toLocaleLowerCase();
+        $("#content tr").filter(function () {
+            $(this).toggle($(this).children('td').first().text().toLocaleLowerCase().indexOf(value) > -1);
+        });
+    });
 
     $(document).ready(function () {
         getForms();        
     });
 
 </script>
-
-@*<button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#newForm">Form Oluştur</button>
-<input type="text" id="search" placeholder="Ara" />
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Form Adı</th>
-            <th>Form Açıklaması</th>
-            <th>Form Sahibi</th>
-            <th>Tarih</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr data-toggle="modal" data-id="@item.Id" data-target="#formModal">
-                <td>@item.Name</td>
-                <td>@item.Description</td>
-                <td>@item.Users.Username</td>
-                <td>@item.CreatedAt.ToString("yyyy-MM-dd")</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<div id="formModal" class="modal fade" role="dialog" aria-labelledby="formModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h3 id="formTitle"></h3>
-            </div>
-            <div class="modal-body">
-                <p id="formDesc"></p>
-            </div>
-            <div class="modal-body">
-                <div class="form-horizontal">
-                    <div class="form-group">
-                        <label class="control-label col-md-2">Ad</label>
-                        <div class="col-md-10">
-                            <input class="form-control" name="name" id="fieldName" type="text" placeholder="Ad giriniz." required />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="control-label col-md-2">Soyad</label>
-                        <div class="col-md-10">
-                            <input class="form-control" name="surname" id="fieldSurname" type="text" placeholder="Soyad giriniz." required />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="control-label col-md-2">Yaş</label>
-                        <div class="col-md-10">
-                            <input class="form-control" name="age" id="fieldAge" type="number" placeholder="Yaş giriniz." />
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <p id="formDate"></p>
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="newForm" class="modal fade" role="dialog" aria-labelledby="newFormLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h3>Yeni Form Oluştur</h3>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary">Oluştur</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    $("#search").on("keyup", function () {
-        var value = $(this).val();
-        $("table tr").each(function (index) {
-            if (index !== 0) {
-                $row = $(this);
-                console.log($row)
-                var id = $row.find("td:first").text().trim().toLocaleLowerCase();
-                console.log(id)
-                if (id.indexOf(value) !== 0) {
-                    $row.hide();
-                }
-                else {
-                    $row.show();
-                }
-            }
-            else {
-                $row = $(this);
-                $row.html("Kayıt bulunamadı")
-            }
-        });
-    });
-
-    $(function () {
-        $('td').on('click', function () {
-            var formId = $(event.target).closest('tr').data('id');
-            //make your ajax call populate items or what even you need
-            console.log("çalıştı", formId)
-            $.ajax({
-                dataType: "json",
-                url: "/i/forms/" + formId,
-                success: function doldur(d) {
-                    console.log(d);
-                    $('#formTitle').text(d.Name);
-                    $('#formDesc').text(d.Description);
-                    $('#formDate').text(d.CreatedAt);
-                    $('#fieldName').val(d.Fields.Name);
-                    $('#fieldSurname').val(d.Fields.Surname);
-                    $('#fieldAge').val(d.Fields.Age);
-                }
-            });
-        });
-    });
-
-</script>*@
-
-
-
